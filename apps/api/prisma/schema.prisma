@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String
+  fullName         String?
+  avatarUrl        String?
+  plan             Plan      @default(FREE)
+  planExpiresAt    DateTime?
+  stripeCustomerId String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  facebookConnections FacebookConnection[]
+  facebookPages       FacebookPage[]
+  posts               Post[]
+  schedules           Schedule[]
+  aiGenerations       AiGeneration[]
+  mediaFiles          MediaFile[]
+  refreshTokens       RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model FacebookConnection {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fbUserId       String
+  accessToken    String
+  tokenExpiresAt DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  pages FacebookPage[]
+
+  @@map("facebook_connections")
+}
+
+model FacebookPage {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connectionId     String
+  connection       FacebookConnection @relation(fields: [connectionId], references: [id])
+  pageId           String
+  pageName         String
+  pageAccessToken  String
+  category         String?
+  followersCount   Int      @default(0)
+  pictureUrl       String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  businessProfile BusinessProfile?
+  posts           Post[]
+  schedules       Schedule[]
+  aiGenerations   AiGeneration[]
+  mediaFiles      MediaFile[]
+  postAnalytics   PostAnalytic[]
+
+  @@unique([userId, pageId])
+  @@map("facebook_pages")
+}
+
+model BusinessProfile {
+  id           String   @id @default(uuid())
+  pageId       String   @unique
+  page         FacebookPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  businessName String?
+  activity     String?
+  mainTheme    String?
+  tone         Tone     @default(PROFESSIONAL)
+  slogan       String?
+  whatsapp     String?
+  phone        String?
+  email        String?
+  address      String?
+  hashtags     String[]
+  language     String   @default("fr")
+  updatedAt    DateTime @updatedAt
+
+  @@map("business_profiles")
+}
+
+model Post {
+  id              String     @id @default(uuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id])
+  pageId          String
+  page            FacebookPage @relation(fields: [pageId], references: [id])
+  content         String
+  contentVariants Json?
+  status          PostStatus @default(DRAFT)
+  mediaUrls       String[]
+  mediaType       MediaType?
+  objective       Objective?
+  toneUsed        Tone?
+  lengthUsed      PostLength?
+  aiPromptUsed    String?
+  fbPostId        String?
+  publishedAt     DateTime?
+  scheduledFor    DateTime?
+  scheduleId      String?
+  schedule        Schedule?  @relation(fields: [scheduleId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  analytics PostAnalytic[]
+
+  @@index([userId, status])
+  @@index([scheduledFor])
+  @@map("posts")
+}
+
+model Schedule {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  pageId        String
+  page          FacebookPage @relation(fields: [pageId], references: [id])
+  name          String?
+  cronExpression String?
+  frequency     Frequency?
+  daysOfWeek    Int[]
+  timeOfDay     String?
+  startDate     DateTime?
+  endDate       DateTime?
+  isActive      Boolean   @default(true)
+  autoGenerate  Boolean   @default(true)
+  themeOverride String?
+  createdAt     DateTime  @default(now())
+
+  posts Post[]
+
+  @@map("schedules")
+}
+
+model AiGeneration {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  pageId     String
+  page       FacebookPage @relation(fields: [pageId], references: [id])
+  prompt     String?
+  result     Json?
+  modelUsed  String?
+  tokensUsed Int?
+  costUsd    Decimal? @db.Decimal(10, 6)
+  createdAt  DateTime @default(now())
+
+  @@map("ai_generations")
+}
+
+model MediaFile {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  pageId       String?
+  page         FacebookPage? @relation(fields: [pageId], references: [id])
+  cloudinaryId String?
+  url          String
+  thumbnailUrl String?
+  fileType     String?
+  fileSizeKb   Int?
+  width        Int?
+  height       Int?
+  durationSec  Int?
+  createdAt    DateTime @default(now())
+
+  @@map("media_files")
+}
+
+model PostAnalytic {
+  id          String   @id @default(uuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id])
+  pageId      String
+  page        FacebookPage @relation(fields: [pageId], references: [id])
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  reach       Int      @default(0)
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  fetchedAt   DateTime @default(now())
+
+  @@map("post_analytics")
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  AGENCY
+}
+
+enum Tone {
+  PROFESSIONAL
+  SELLER
+  MOTIVATION
+  FUNNY
+  EDUCATIONAL
+}
+
+enum PostStatus {
+  DRAFT
+  PENDING_VALIDATION
+  VALIDATED
+  REJECTED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL
+  NONE
+}
+
+enum Objective {
+  AWARENESS
+  ENGAGEMENT
+  CONVERSION
+  TRAFFIC
+}
+
+enum PostLength {
+  SHORT
+  MEDIUM
+  LONG
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  CUSTOM
+}
