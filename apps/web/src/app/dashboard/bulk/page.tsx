@@ -209,6 +209,8 @@ function MotionBanner() {
 /* ─── Precision Prompt ─── */
 function PrecisionPrompt({ customInstructions, onChange }: { customInstructions: string; onChange: (v: string) => void }) {
   const [selected, setSelected] = useState<string[]>([]);
+  const [freeText, setFreeText] = useState('');
+  const shortcutText = selected.map(s => PRECISION_SHORTCUTS.find(p => p.label === s)?.append || '').join(' ');
 
   const toggleShortcut = (shortcut: typeof PRECISION_SHORTCUTS[0]) => {
     const isSelected = selected.includes(shortcut.label);
@@ -217,13 +219,15 @@ function PrecisionPrompt({ customInstructions, onChange }: { customInstructions:
       : [...selected, shortcut.label];
     setSelected(newSelected);
 
-    let base = customInstructions;
-    if (isSelected) {
-      base = base.replace(' ' + shortcut.append, '').replace(shortcut.append, '').trim();
-    } else {
-      base = base ? base + ' ' + shortcut.append : shortcut.append;
-    }
-    onChange(base.trim());
+    const newShortcutText = newSelected.map(s => PRECISION_SHORTCUTS.find(p => p.label === s)?.append || '').join(' ');
+    const combined = [newShortcutText, freeText].filter(Boolean).join(' ');
+    onChange(combined.trim());
+  };
+
+  const handleFreeText = (val: string) => {
+    setFreeText(val);
+    const combined = [shortcutText, val].filter(Boolean).join(' ');
+    onChange(combined.trim());
   };
 
   return (
@@ -233,7 +237,9 @@ function PrecisionPrompt({ customInstructions, onChange }: { customInstructions:
         <span className="text-sm font-semibold text-indigo-900">Prompt de précision</span>
         <span className="text-xs text-indigo-500">Affinez le style de vos publications</span>
       </div>
-      <div className="flex flex-wrap gap-2">
+
+      {/* Shortcuts */}
+      <div className="flex flex-wrap gap-2 mb-3">
         {PRECISION_SHORTCUTS.map((s) => {
           const active = selected.includes(s.label);
           return (
@@ -253,9 +259,19 @@ function PrecisionPrompt({ customInstructions, onChange }: { customInstructions:
           );
         })}
       </div>
-      {selected.length > 0 && (
-        <p className="text-xs text-indigo-600 mt-2 italic">
-          Style appliqué : {selected.join(', ')}
+
+      {/* Free text input */}
+      <textarea
+        value={freeText}
+        onChange={(e) => handleFreeText(e.target.value)}
+        placeholder="Écris tes propres instructions… Ex: Mentionne notre promo -30%, ajoute un appel à l'action fort, utilise le prénom du client…"
+        rows={2}
+        className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+      />
+
+      {(selected.length > 0 || freeText) && (
+        <p className="text-xs text-indigo-500 mt-1.5 italic truncate">
+          Prompt actif : {[shortcutText, freeText].filter(Boolean).join(' · ')}
         </p>
       )}
     </div>
@@ -280,7 +296,7 @@ function PostStats({ content }: { content: string }) {
 }
 
 /* ─── Step Bar ─── */
-function StepBar({ current }: { current: number }) {
+function StepBar({ current, onGoTo }: { current: number; onGoTo: (step: number) => void }) {
   return (
     <div className="flex items-center mb-8 overflow-x-auto">
       {STEPS.map((s, i) => {
@@ -288,15 +304,20 @@ function StepBar({ current }: { current: number }) {
         const active = current === s.id;
         return (
           <div key={s.id} className="flex items-center flex-shrink-0">
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-              active ? 'bg-indigo-600 text-white shadow-sm' :
-              done ? 'bg-green-100 text-green-700' :
-              'bg-gray-100 text-gray-400'
-            }`}>
+            <button
+              type="button"
+              disabled={!done}
+              onClick={() => done && onGoTo(s.id)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                active ? 'bg-indigo-600 text-white shadow-sm cursor-default' :
+                done ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer' :
+                'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
               {done ? <CheckCircle className="h-3.5 w-3.5" /> : <s.icon className="h-3.5 w-3.5 flex-shrink-0" />}
               <span className="hidden sm:block">{s.label}</span>
               <span className="sm:hidden">{s.id}</span>
-            </div>
+            </button>
             {i < STEPS.length - 1 && <ChevronRight className="h-4 w-4 text-gray-300 mx-1 flex-shrink-0" />}
           </div>
         );
@@ -425,7 +446,7 @@ export default function BulkPage() {
       {/* Motion Banner */}
       <MotionBanner />
 
-      <StepBar current={step} />
+      <StepBar current={step} onGoTo={setStep} />
 
       {/* ══ STEP 1 : Génération ══ */}
       {step === 1 && (
@@ -509,12 +530,6 @@ export default function BulkPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Instructions spéciales <span className="text-gray-400 font-normal">(optionnel)</span></label>
-              <input type="text" value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)}
-                placeholder="Ex: Mentionner une promo -20%, utiliser des emojis…"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
           </Card>
 
           <div className="flex justify-end">
