@@ -2,6 +2,9 @@ import { Response } from 'express';
 import { AuthRequest } from '../types';
 import * as fbService from '../services/facebook.service';
 import { prisma } from '../lib/prisma';
+import multer from 'multer';
+
+export const photoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 export async function getAuthUrl(req: AuthRequest, res: Response): Promise<void> {
   const url = fbService.getFacebookAuthUrl(req.userId!);
@@ -90,6 +93,41 @@ export async function getPageProfile(req: AuthRequest, res: Response): Promise<v
   });
   if (!page) { res.status(404).json({ error: 'Page introuvable' }); return; }
   res.json(page.businessProfile);
+}
+
+export async function importFacebookPosts(req: AuthRequest, res: Response): Promise<void> {
+  const { pageId } = req.params;
+  try {
+    const result = await fbService.importFacebookPosts(req.userId!, pageId);
+    res.json({ success: true, ...result });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+}
+
+export async function manualTokenConnect(req: AuthRequest, res: Response): Promise<void> {
+  const { userAccessToken } = req.body;
+  if (!userAccessToken) { res.status(400).json({ error: 'Token requis' }); return; }
+  try {
+    const result = await fbService.connectWithManualToken(req.userId!, userAccessToken);
+    res.json({ status: 'connected', count: result.count });
+  } catch (err: unknown) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+}
+
+export async function uploadPhoto(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.file) { res.status(400).json({ error: 'Fichier manquant' }); return; }
+  const { pageId } = req.params;
+  const page = await prisma.facebookPage.findFirst({ where: { id: pageId, userId: req.userId! } });
+  if (!page) { res.status(404).json({ error: 'Page introuvable' }); return; }
+  try {
+    const photoId = await fbService.uploadPhotoToFacebook(pageId, req.file.buffer, req.file.mimetype);
+    res.json({ photoId, url: `fb:${photoId}` });
+  } catch (err) {
+    console.error('Photo upload error:', err);
+    res.status(500).json({ error: 'Erreur upload photo vers Facebook' });
+  }
 }
 
 export async function upsertPageProfile(req: AuthRequest, res: Response): Promise<void> {

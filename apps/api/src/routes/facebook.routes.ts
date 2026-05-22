@@ -6,13 +6,16 @@ import { checkPageQuota } from '../middleware/plan.middleware';
 const router = Router();
 
 router.get('/auth-url', authMiddleware, ctrl.getAuthUrl);
+router.post('/manual-token', authMiddleware, ctrl.manualTokenConnect);
 router.get('/callback', ctrl.handleCallback);
 router.get('/pages/available', authMiddleware, ctrl.getAvailablePages);
 router.get('/pages', authMiddleware, ctrl.getConnectedPages);
 router.post('/pages/connect', authMiddleware, checkPageQuota(), ctrl.connectPage);
 router.delete('/pages/:id', authMiddleware, ctrl.disconnectPage);
+router.post('/pages/:pageId/import-posts', authMiddleware, ctrl.importFacebookPosts);
 router.get('/pages/:pageId/profile', authMiddleware, ctrl.getPageProfile);
 router.post('/pages/:pageId/profile', authMiddleware, ctrl.upsertPageProfile);
 router.put('/pages/:pageId/profile', authMiddleware, ctrl.upsertPageProfile);
+router.post('/pages/:pageId/upload-photo', authMiddleware, ctrl.photoUpload.single('photo'), ctrl.uploadPhoto);
 
 export default router;

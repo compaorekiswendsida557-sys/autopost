@@ -110,6 +110,17 @@ export const facebookApi = {
   updatePageConfig: (pageId: string, data: unknown) =>
     api.put(`/facebook/pages/${pageId}/profile`, data),
   disconnectPage: (pageId: string) => api.delete(`/facebook/pages/${pageId}`),
+  manualTokenConnect: (userAccessToken: string) =>
+    api.post('/facebook/manual-token', { userAccessToken }),
+  importPosts: (pageId: string) =>
+    api.post(`/facebook/pages/${pageId}/import-posts`),
+  uploadPhoto: (pageId: string, file: File) => {
+    const form = new FormData();
+    form.append('photo', file);
+    return api.post(`/facebook/pages/${pageId}/upload-photo`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // Media
@@ -128,4 +139,14 @@ export const mediaApi = {
 export const analyticsApi = {
   dashboard: () => api.get('/analytics/overview'),
   posts: () => api.get('/analytics/posts'),
+};
+
+// Payments
+export const paymentApi = {
+  stripeCheckout: (plan: 'PRO' | 'AGENCY') =>
+    api.post('/payments/stripe/checkout', { plan }),
+  stripePortal: () =>
+    api.post('/payments/stripe/portal'),
+  getSubscription: () =>
+    api.get('/payments/subscription'),
 };
