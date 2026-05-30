@@ -2,9 +2,10 @@
   "name": "@autopost/api",
   "version": "1.0.0",
   "private": true,
+  "engines": { "node": ">=18.0.0" },
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

@@ -204,12 +204,35 @@ export async function uploadPhotoToFacebook(
   if (!page) throw new Error('Page introuvable');
   const pageToken = decryptToken(page.pageAccessToken);
 
-  const formData = new FormData();
-  formData.append('source', new Blob([buffer], { type: mimetype }), 'photo.jpg');
-  formData.append('published', 'false');
-  formData.append('access_token', pageToken);
+  // Build multipart/form-data manually to avoid relying on browser globals
+  const boundary = `----AutoPostBoundary${Date.now()}`;
+  const CRLF = '\r\n';
 
-  const res = await axios.post(`${META_BASE}/${page.pageId}/photos`, formData);
+  const head = (
+    `--${boundary}${CRLF}` +
+    `Content-Disposition: form-data; name="source"; filename="photo.jpg"${CRLF}` +
+    `Content-Type: ${mimetype}${CRLF}${CRLF}`
+  );
+  const textFields = (
+    `${CRLF}--${boundary}${CRLF}` +
+    `Content-Disposition: form-data; name="published"${CRLF}${CRLF}false${CRLF}` +
+    `--${boundary}${CRLF}` +
+    `Content-Disposition: form-data; name="access_token"${CRLF}${CRLF}${pageToken}${CRLF}` +
+    `--${boundary}--${CRLF}`
+  );
+
+  const body = Buffer.concat([
+    Buffer.from(head, 'utf8'),
+    buffer,
+    Buffer.from(textFields, 'utf8'),
+  ]);
+
+  const res = await axios.post(`${META_BASE}/${page.pageId}/photos`, body, {
+    headers: {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': body.length,
+    },
+  });
   return res.data.id as string;
 }
 
