@@ -201,8 +201,9 @@ export default function CreatePostPage() {
       setSelectedVariant(0);
       toast.success(`${v.length} variante(s) générée(s) !`);
       setStep(1);
-    } catch {
-      toast.error('Erreur de génération IA. Vérifiez votre configuration de page.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(msg || 'Erreur de génération IA. Vérifiez votre configuration de page.');
     } finally {
       setGenerating(false);
     }
