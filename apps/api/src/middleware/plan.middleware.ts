@@ -41,17 +41,22 @@ export function checkQuota(resource: 'posts_per_month' | 'ai_per_month') {
     const month = new Date().toISOString().slice(0, 7);
     const key = `quota:${req.userId}:${resource}:${month}`;
 
-    const current = await redis.incr(key);
-    if (current === 1) await redis.expire(key, 32 * 24 * 3600);
+    try {
+      const current = await redis.incr(key);
+      if (current === 1) await redis.expire(key, 32 * 24 * 3600);
 
-    if (current > limit) {
-      res.status(429).json({
-        error: 'quota_exceeded',
-        message: `Limite mensuelle atteinte (${limit} ${resource}). Passez à un plan supérieur.`,
-        limit,
-        current: current - 1,
-      });
-      return;
+      if (current > limit) {
+        res.status(429).json({
+          error: 'quota_exceeded',
+          message: `Limite mensuelle atteinte (${limit} ${resource}). Passez à un plan supérieur.`,
+          limit,
+          current: current - 1,
+        });
+        return;
+      }
+    } catch (err) {
+      // Redis unavailable — allow request through rather than blocking
+      console.warn(`[quota] Redis unavailable for ${key}, skipping quota check:`, (err as Error).message);
     }
     next();
   };

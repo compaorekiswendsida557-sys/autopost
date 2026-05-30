@@ -5,8 +5,11 @@ export const redis = new Redis({
   port: Number(process.env.REDIS_PORT) || 6379,
   password: process.env.REDIS_PASSWORD || undefined,
   tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
-  maxRetriesPerRequest: null,
+  maxRetriesPerRequest: 2,
   enableReadyCheck: false,
+  connectTimeout: 5000,
+  commandTimeout: 5000,
+  lazyConnect: true,
 });
 
 redis.on('error', (err) => {
