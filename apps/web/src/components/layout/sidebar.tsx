@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, PlusCircle, FileText, Calendar,
-  Facebook, Settings, Zap, LogOut, ChevronRight, Layers
+  Facebook, Settings, Zap, LogOut, ChevronRight, Layers, CreditCard
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { cn, getPlanLabel } from '@/lib/utils';
@@ -18,6 +18,7 @@ const navItems = [
   { href: '/dashboard/posts', label: 'Mes publications', icon: FileText },
   { href: '/dashboard/calendar', label: 'Calendrier', icon: Calendar },
   { href: '/dashboard/pages', label: 'Pages Facebook', icon: Facebook },
+  { href: '/dashboard/billing', label: 'Abonnement', icon: CreditCard },
   { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
 ];
 
@@ -28,7 +29,7 @@ const planColors: Record<string, string> = {
   AGENCY: 'bg-purple-100 text-purple-700',
 };
 
-export function Sidebar() {
+export function Sidebar({ forMobile = false }: { forMobile?: boolean }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -40,7 +41,10 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 flex-shrink-0 hidden lg:flex flex-col h-screen sticky top-0 bg-white border-r border-gray-100">
+    <aside className={cn(
+      "w-64 flex-shrink-0 flex-col h-screen bg-white border-r border-gray-100",
+      forMobile ? "flex" : "hidden lg:flex sticky top-0"
+    )}>
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-100">
         <Link href="/dashboard" className="flex items-center gap-2.5">

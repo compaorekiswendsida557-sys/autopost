@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/auth-context';
@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: 'AutoPost — Automatisez vos publications Facebook avec IA',
   description: 'Générez, programmez et publiez automatiquement des contenus Facebook grâce à l\'intelligence artificielle.',
   keywords: 'facebook, publication, IA, marketing, automatisation',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

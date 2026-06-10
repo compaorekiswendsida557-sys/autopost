@@ -357,7 +357,7 @@ export default function CreatePostPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Ton</label>
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                 {TONES.map((t) => (
                   <button key={t.value} type="button" onClick={() => setTone(t.value)}
                     className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 text-xs font-medium transition-all ${
@@ -386,7 +386,7 @@ export default function CreatePostPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Objectif</label>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {OBJECTIVES.map((o) => (
                   <button key={o.value} type="button" onClick={() => setObjective(o.value)}
                     className={`flex items-center gap-1.5 p-2.5 rounded-xl border-2 text-xs font-medium transition-all ${
